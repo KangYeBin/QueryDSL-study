@@ -304,6 +304,10 @@ class MemberRepositoryTest {
     void join() {
         // given
 
+        // Oracle DB의 경우 Oracle의 조인 문법도 사용 가능
+        // SELECT * FROM employees, departments WHERE ~
+        // select().from(employees, departments).where(~)
+
         // when
         List<Tuple> result = factory.select(member.userName, team.name)
                 .from(member)
@@ -354,9 +358,9 @@ class MemberRepositoryTest {
 
         // when
         List<Member> result = factory.selectFrom(member)
-                .where(member.age.gt(
+                .where(member.age.eq(
                         JPAExpressions  // 서브쿼리를 사용하게 해주는 클래스
-                                .select(memberSub.age.avg())
+                                .select(memberSub.age.max())
                                 .from(memberSub)
                 ))
                 .fetch();
@@ -365,5 +369,46 @@ class MemberRepositoryTest {
         System.out.println("\n\n\n");
         result.forEach(System.out::println);
         System.out.println("\n\n\n");
+    }
+
+    @Test
+    @DisplayName("sub query 사용하기 (나이가 평균 나이 이상인 회원을 조회)")
+    void subQueryGoe() {
+        // given
+        QMember memberSub2 = new QMember("memberSub2");
+
+        // when
+        List<Member> result = factory.selectFrom(member)
+                .where(member.age.goe(
+                        JPAExpressions
+                                // JPQExpression은 from절을 제외하고 select와 where절에서 사용 가능
+                                // JPQL도 마찬가지로 from절 서브쿼리 사용 불가
+                                // -> Native SQL을 작성하던지, MyBatis or JdbcTemplate 이용
+                                .select(memberSub2.age.avg())
+                                .from(memberSub2)
+                ))
+                .fetch();
+
+        // then
+        System.out.println("\n\n\n");
+        result.forEach(System.out::println);
+        System.out.println("\n\n\n");
+    }
+
+    @Test
+    @DisplayName("동적 sql 테스트")
+    void dynamicQueryTest() {
+        // given
+        String name = null;
+        Integer age = null;
+
+        // when
+        List<Member> result = memberRepository.findUser(name, age);
+
+        // then
+        System.out.println("\n\n\n");
+        result.forEach(System.out::println);
+        System.out.println("\n\n\n");
+
     }
 }
